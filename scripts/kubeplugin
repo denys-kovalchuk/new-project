@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Check if the correct number of arguments is provided
+if [ "$#" -ne 3 ]; then
+  echo "Usage: $0 <namespace> <resource-type> <output-format>"
+  exit 1
+fi
+
+# Assign command-line arguments to variables
+NAMESPACE=$1
+RESOURCE_TYPE=$2
+OUTPUT_FORMAT=$3
+
+# Retrieve resource usage statistics from Kubernetes
+kubectl top $RESOURCE_TYPE -n $NAMESPACE | tail -n +2 | while read -r line
+do
+  # Extract CPU and memory usage from the output
+  NAME=$(echo "$line" | awk '{print $1}')
+  CPU=$(echo "$line" | awk '{print $2}')
+  MEMORY=$(echo "$line" | awk '{print $3}')
+
+  # Output the statistics based on the specified format
+  case $OUTPUT_FORMAT in
+    "csv")
+      echo "Resource, Namespace, Name, CPU, Memory"
+      echo "$RESOURCE_TYPE, $NAMESPACE, $NAME, $CPU, $MEMORY"
+      ;;
+    "plain")
+      echo "Resource: $RESOURCE_TYPE, Namespace: $NAMESPACE, Name: $NAME, CPU: $CPU, Memory: $MEMORY"
+      ;;
+    *)
+      echo "Invalid output format. Supported formats: csv, plain"
+      exit 1
+      ;;
+  esac
+done
